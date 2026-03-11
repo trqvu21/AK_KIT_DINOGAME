@@ -67,7 +67,7 @@ void msg_free(ak_msg_t* msg) {
 			break;
 
 		default:
-			FATAL("MF", 0x20);
+			FATAL("MF", 99);
 			break;
 		}
 	}

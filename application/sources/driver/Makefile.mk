@@ -6,3 +6,4 @@ include sources/driver/led/Makefile.mk
 include sources/driver/AsyncDelay/Makefile.mk
 include sources/driver/gpio/Makefile.mk
 include sources/driver/buzzer/Makefile.mk
+include sources/driver/nRF24/Makefile.mk
