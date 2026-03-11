@@ -1,150 +1,254 @@
 # Multiplayer Dino Game - Build on AK Embedded Base Kit
 
-<center><img src="resources/images/AK_Embedded_Base_Kit_STM32L151.webp" alt="Dino game banner" width="100%"/></center>
 
 
 <hr>
 
 ## I. Giới thiệu
 
-**Multiplayer Dino Game** là một tựa game sinh tồn màn hình ngang vô tận (Endless Runner) chạy trên nền tảng hệ điều hành thời gian thực (RTOS) của AK Embedded Base Kit. 
-
-Khác với phiên bản game Khủng long Offline truyền thống trên trình duyệt, dự án này mang đến một bước đột phá: **Tương tác hai người chơi (Multiplayer) theo thời gian thực**. Thông qua module vô tuyến NRF24L01+, hai board mạch độc lập có thể đồng bộ trạng thái game và cho phép người chơi "tấn công" lẫn nhau bằng cách gửi các hiệu ứng trừng phạt qua sóng RF.
-
-Quá trình phát triển tựa game này là một bài thực hành thực tế sâu sắc về Lập trình Hướng sự kiện (Event-Driven), Quản lý bộ nhớ (Object Pooling), Tối ưu hóa đồ họa 2D (Hitbox & Animation) và xử lý độ trễ trong truyền thông không dây.
+Multiplayer Dino game là một tựa game chạy trên AK Embedded Base Kit. Được xây dựng nhằm mục đích giúp các bạn có đam mê về lập trình nhúng có thể tìm hiểu và thực hành về lập trình event-driven. Trong quá trình xây dựng nên Dino game, các bạn sẽ hiểu thêm về cách thiết kế và ứng dụng UML, Task, Signal, Timer, Message, State-machine và đặc biệt là giao tiếp vô tuyến (RF).
 
 ### 1.1 Phần cứng
 
-<p align="center"><img src="[https://github.com/ak-embedded-software/archery-game/blob/main/resources/images/AK_Embedded_Base_Kit_STM32L151.webp](https://github.com/ak-embedded-software/archery-game/blob/main/resources/images/AK_Embedded_Base_Kit_STM32L151.webp)" alt="AK Embedded Base Kit - STM32L151" width="480"/></p>
+<p align="center"><img src="resources/images/AK_Embedded_Base_Kit_STM32L151.webp" alt="AK Embedded Base Kit - STM32L151" width="480"/></p>
 <p align="center"><strong><em>Hình 1:</em></strong> AK Embedded Base Kit - STM32L151</p>
 
-[AK Embedded Base Kit](https://epcb.vn/products/ak-embedded-base-kit-lap-trinh-nhung-vi-dieu-khien-mcu) là một evaluation kit dành cho các bạn học phần mềm nhúng nâng cao. Trong dự án này, hệ thống khai thác các phần cứng cốt lõi sau:
-* **LCD OLED 1.3":** Hiển thị không gian trò chơi với tốc độ quét (frame rate) cực cao nhờ giao tiếp I2C/SPI được tối ưu hóa.
-* **Nút nhấn (Buttons):** Sử dụng `btn_up` và `btn_down` để thực hiện các thao tác cơ động.
-* **Còi Buzzer:** Phát âm thanh cảnh báo, ăn điểm và hiệu ứng Game Over (Non-blocking).
-* **Module NRF24L01+:** Kênh truyền nhận dữ liệu tần số 2.4GHz để đồng bộ trạng thái giữa 2 máy chơi game.
+[AK Embedded Base Kit](https://epcb.vn/products/ak-embedded-base-kit-lap-trinh-nhung-vi-dieu-khien-mcu) là một evaluation kit dành cho các bạn học phần mềm nhúng nâng cao.
 
-### 1.2 Mô tả trò chơi và Đối tượng
-Phần mô tả sau giải thích cách chơi, luật chơi và cơ chế xử lý nội bộ của hệ thống Multiplayer Dino.
+KIT tích hợp LCD **OLED 1.3", 3 nút nhấn, và 1 loa Buzzer phát nhạc**, với các trang bị này thì đã đủ để học hệ thống event-driven thông qua thực hành thiết kế máy chơi game.
+
+KIT cũng tích hợp **RS485**, **NRF24L01+**, và **Flash** lên đến 32MB, thích hợp cho prototype các ứng dụng thực tế trong hệ thống nhúng hay sử dụng như: truyền thông có dây, không dây wireless, các ứng dụng lưu trữ data logger,... Trong dự án này, module **NRF24L01+** được khai thác tối đa để làm tính năng Multiplayer (Nhiều người chơi) theo thời gian thực.
+
+### 1.2 Mô tả trò chơi và đối tượng
+Phần mô tả sau đây về **“Multiplayer Dino game”** , giải thích cách chơi và cơ chế xử lý của trò chơi.
+
+<p align="center"><img src="images/game_play.jpg" alt="dino game play screen" width="600"/></p>
+<p align="center"><strong><em>Hình 2:</em></strong> Màn hình game play và các đối tượng</p>
 
 #### 1.2.1 Các đối tượng (Object) trong game:
-Để tối ưu hóa RAM của vi điều khiển, game áp dụng mô hình **Entity Management (Quản lý Thực thể)**.
+|Đối tượng|Tên đối tượng|Mô tả|
+|---|---|---|
+|**Khủng long**|Dino|Nhân vật chính. Có thể điều khiển nhảy lên hoặc gập người cúi xuống.|
+|**Xương rồng**|Cactus|Chướng ngại vật nằm sát mặt đất. Bắt buộc phải nhảy qua.|
+|**Chim dực long**|Bird|Chướng ngại vật bay trên không ở 2 tầm (cao và thấp). Ép người chơi phải nhảy hoặc cúi.|
+|**Hộp quà**|Gift|Vật phẩm (Item) rơi ngẫu nhiên. Khi ăn được sẽ dùng để tấn công đối thủ qua sóng RF.|
+|**Đám mây**|Cloud|Cảnh nền lơ lửng, trôi chậm hơn tiền cảnh để tạo hiệu ứng 3D (Parallax).|
 
-| Đối tượng | Tên biến / Struct | Loại | Mô tả |
-| :--- | :--- | :--- | :--- |
-| **Khủng long** | `dino_t dino` | Người chơi | Nhân vật chính. Có thể chạy, nhảy lên cao (tránh Xương rồng/Chim bay thấp) hoặc cúi gập người (tránh Chim bay cao). |
-| **Xương rồng** | `game_obj_t objects[]` | Chướng ngại vật | Nằm sát mặt đất. Chiều cao 16px. Người chơi bắt buộc phải nhảy qua. Chạm vào sẽ Game Over. |
-| **Chim Dực long** | `game_obj_t objects[]` | Chướng ngại vật | Bay lơ lửng ở 2 tầm cao ngẫu nhiên. **Bay thấp:** Bắt buộc nhảy qua. **Bay cao:** Bắt buộc phải cúi người né. |
-| **Hộp quà** | `game_obj_t objects[]` | Vật phẩm (Item)| Lơ lửng trên không. Khi mạo hiểm nhảy ăn được, kích hoạt kỹ năng "Tấn công" gửi qua sóng RF. |
-| **Đám mây** | `bg_obj_t bgs[]` | Cảnh nền | Trôi liên tục ở phía sau với tốc độ chậm (Speed = 10) tạo hiệu ứng chiều sâu (Parallax Scrolling). |
+#### 1.2.2 Cách chơi game:
+- Trò chơi sử dụng 2 thiết bị kết nối với nhau. Một thiết bị được phân quyền làm `MASTER`. Nhấn nút **[Down]** trên máy Master để bắt đầu đồng bộ ván chơi cho cả 2 thiết bị.
+- Trong trò chơi này bạn sẽ điều khiển Dino, nhấn nút **[Up]** để bật nhảy, và nhấn giữ nút **[Down]** để gập người cúi xuống.
+- Mục tiêu trò chơi là kiếm được càng nhiều điểm càng tốt, sống sót lâu nhất có thể và ăn Hộp quà để gây khó dễ cho máy đối thủ. Trò chơi kết thúc khi Dino chạm vào Cactus hoặc Bird.
 
-#### 1.2.2 Luật chơi và Cách chơi:
-1. **Khởi động & Đồng bộ:** Hai người chơi bật máy cùng lúc. Board mạch được cấu hình là `MASTER` sẽ hiển thị "PRESS DOWN TO START". Người chơi nhấn nút **[Down]**, máy Master sẽ phát sóng RF lệnh `CMD_START` để cả 2 board bắt đầu game vào cùng 1 mili-giây.
-2. **Thao tác điều khiển:**
-   * **Nhảy lên (Jump):** Nhấn nút **[Up]**. Dùng để né Xương rồng và Chim bay thấp. Khủng long chịu tác động của trọng lực ảo (Gravity) nên sẽ rơi xuống theo quỹ đạo Parabol.
-   * **Cúi người (Duck):** Nhấn giữ nút **[Down]**. Khủng long sẽ gập người xuống sát đất, thu nhỏ một nửa hộp va chạm (Hitbox) để né Chim bay cao. Nhả nút ra Khủng long sẽ đứng thẳng lại.
-3. **Mục tiêu:** Sinh tồn lâu nhất có thể, đồng thời cố gắng thu thập **Hộp quà** để tiêu diệt đối thủ.
+#### 1.2.3 Cơ chế hoạt động:
+- **Cách tính điểm:** Điểm được tính bằng số lượng Cactus hoặc Bird mà bạn đã vượt qua thành công (mỗi đối tượng +1 điểm). Nếu mạo hiểm nhảy ăn được Gift, bạn sẽ được thưởng nóng +5 điểm.
+- **Độ khó:** Tốc độ di chuyển ban đầu (Speed) là 35. Mỗi khi tích lũy được 15 điểm, tốc độ của game sẽ tăng lên một cấp độ (+5 đơn vị) và giới hạn ở mức 60 để tránh vật cản bị xuyên thấu.
+- **Cơ chế Multiplayer (Tấn công):** Khi một thiết bị ăn được Gift, thiết bị đó lập tức phát sóng RF lệnh `CMD_ATTACK` sang máy còn lại. Máy bị tấn công sẽ báo động bằng còi, nhấp nháy chữ "SPEED UP!", và tốc độ game sẽ tăng đột biến (+20 đơn vị) trong vòng 3 giây.
+- **Kết thúc trò chơi:** Khi Dino chạm vào vật cản, nó sẽ gửi lệnh `CMD_I_DIED` sang máy đối thủ. Máy chạm vật cản hiển thị "YOU LOSE", máy còn lại sẽ nhận được thông báo tử trận và hiển thị "YOU WIN". Nút **[Down]** được sử dụng để đưa game về trạng thái chờ (Waiting) cho ván mới.
 
-#### 1.2.3 Cơ chế hoạt động (Game Mechanics):
-* **Hệ thống Tính điểm (Scoring):**
-  * Vượt qua thành công 1 Xương rồng hoặc 1 Chim Dực long: **+1 Điểm**.
-  * Thu thập được Hộp quà: **+5 Điểm thưởng**.
-* **Hệ thống Độ khó (Dynamic Speed Scaling):**
-  * Tốc độ di chuyển nền khởi điểm là `35`.
-  * Cứ mỗi **15 điểm** tích lũy, tốc độ game được cộng thêm `5` đơn vị.
-  * Mức trần (Speed Cap) được khóa ở mức `60` để ngăn hiện tượng "Xuyên thấu Box" (Tunneling Effect) do vật thể trượt đi quá số pixel chiều rộng của nó trong 1 chu kỳ vẽ.
-* **Cơ chế Multiplayer - Ném tạ (Attack System):**
-  * Khi Máy A điều khiển Khủng long ăn được **Hộp quà**, nó lập tức gọi hàm `rf_send_cmd(CMD_ATTACK)` sang Máy B.
-  * Khi Máy B nhận được lệnh này, còi báo động khẩn cấp (`tones_startup`) sẽ vang lên. Màn hình Máy B chớp nháy dòng chữ **"SPEED UP!"**. Toàn bộ chướng ngại vật trên Máy B sẽ lao đến với **Siêu Tốc Độ** (Tốc độ cơ bản hiện tại + `20`) trong thời gian 3 giây (300 Time Ticks).
-* **Kết thúc (Game Over):**
-  * Khi Khủng long chạm vào chướng ngại vật, hệ thống gửi lệnh `CMD_I_DIED` thông báo "Báo Tử" sang máy đối thủ.
-  * Máy chạm chướng ngại vật sẽ chuyển sang `MP_LOSE` (YOU LOSE), máy đối thủ nhận được tin báo tử sẽ tự động chuyển sang `MP_WIN` (YOU WIN).
+## II. Thiết kế - MULTIPLAYER DINO GAME
+**Các khái niệm trong event-driven:**
 
-<hr>
+- **Event Driven:** Hệ thống gửi message để thực thi các công việc. Trong đó, Task đóng vai trò là người nhận thư, Signal đại diện cho nội dung công việc.
+- **Task:** Mỗi Task sẽ nhận một nhóm công việc nhất định.
+- **Message:** Được chia làm 2 loại chính, Message chỉ chứa Signal, hoặc vừa chứa Signal và Data.
+- **Handler:** Chỗ thực thi một công việc nào đó.
 
-## II. Thiết kế Hệ thống & Kiến trúc (Architecture Design)
-### 2.1 Môi trường Event-Driven (AK OS)
-Trò chơi được xây dựng dựa trên nguyên lý Event-driven (Hệ thống hướng sự kiện). Các sự kiện (phím bấm, đếm thời gian, nhận sóng RF) được gọi là các **Signal** và ném vào hàng đợi (Message Queue) để **Task** tuần tự lấy ra xử lý.
+### 2.1 Sơ đồ trình tự
+**Sơ đồ trình tự** được sử dụng để mô tả trình tự của các Message và luồng tương tác giữa các đối tượng.
 
-### 2.2 Tối ưu hóa: Bài toán Tràn bộ nhớ (MF 31 - Queue Overflow)
-Trong giai đoạn đầu phát triển, game gặp lỗi chí mạng `MF 31` (Memory Fault - cạn kiệt Pool Message).
-* **Nguyên nhân:** Việc dùng `TIMER_PERIODIC` (Đồng hồ chu kỳ 10ms) liên tục ném sự kiện đếm giờ vào Queue. Tuy nhiên, màn hình OLED cần tới ~35ms để render 1 khung hình. CPU bị nghẽn ở hàm render, dẫn đến Timer liên tục nhồi lệnh vào Queue gây tràn bộ nhớ. Thao tác "Spam" phím bấm của người chơi càng làm Queue sụp đổ nhanh hơn.
-* **Giải pháp - Kỹ thuật `TIMER_ONE_SHOT`:**
-  Trò chơi chuyển sang chiến lược đồng bộ Frame-by-Frame. Bộ đếm `TIMER_ONE_SHOT` chỉ được đặt 1 lần. CPU sẽ thoải mái tính toán logic, nhận sóng RF, đọc phím và vẽ toàn bộ ra màn hình OLED. **Chỉ khi nào hoàn tất 100%**, CPU mới gọi lệnh tái thiết lập (Set Timer) cho chu kỳ tiếp theo.
-  Hàng đợi hệ điều hành luôn được giữ trống trải, triệt tiêu hoàn toàn lỗi Crash `MF 31` dù chơi ở tốc độ cao nhất.
+<p align="center"><img src="images/sequence_diagram.jpg" alt="dino game UML" width="720"/></p>
+<p align="center"><strong><em>Hình 3:</em></strong> The sequence diagram</p>
 
-### 2.3 Sơ đồ Máy Trạng Thái (State Machine)
-Biến `mp_state` quản lý luồng điều hướng của game:
-```text
-[MP_WAITING] ----- (Nhận nút DOWN / RF báo START) -----> [MP_PLAYING]
-      ^                                                        |
-      |                                                        |
-      +----- (Nhận nút DOWN / Chết / Đối thủ chết) <-----------+
-                 [MP_LOSE]    hoặc    [MP_WIN]
-```
+### Ghi chú:
+**SCREEN_ENTRY:** Cài đặt các thiết lập ban đầu cho đối tượng trong game.
+- **dino_reset():** Đặt tọa độ, vận tốc và trạng thái mặc định cho Dino. Khởi tạo mảng vật thể Tiền cảnh và Hậu cảnh. Đặt điểm số về 0.
+- **rf_init_hardware_kit():** Khởi tạo ngoại vi vô tuyến NRF24L01+.
+- **rf_mode_rx():** Chuyển NRF24L01+ sang chế độ lắng nghe (Receive Mode).
+- **Setup timer - Time tick:** Khởi tạo `TIMER_ONE_SHOT` với chu kỳ 10ms (Sử dụng One-Shot để ngăn lỗi tràn bộ nhớ MF 31).
 
-<hr>
+**GAME PLAY:** Quá trình hoạt động của game.
 
-## III. Phân tích Thuật toán Cốt lõi (Core Algorithms)
+**GAME PLAY - Normal:** Game hoạt động ở trạng thái bình thường.
+- **AR_GAME_TIME_TICK:** Signal do Timer - Time tick gửi đến.
+- **Polling Buttons:** Kiểm tra trạng thái nhấn/giữ của các nút `btn_up` và `btn_down`.
+- **RF Receive:** Kiểm tra và nhận các lệnh `CMD_START`, `CMD_I_DIED`, `CMD_ATTACK`.
+- **dino_update():** Tính toán vận tốc nhảy, cập nhật tọa độ trôi của vật thể và tính toán va chạm.
+- **view_render.update():** Vẽ toàn bộ các đối tượng ra màn hình OLED.
+- **Set Timer:** Khởi động lại `TIMER_ONE_SHOT` cho chu kỳ tiếp theo sau khi logic đã vẽ xong.
 
-### 3.1 Thuật toán Va chạm với Hitbox Động (Dynamic AABB Collision)
-Thuật toán AABB (Axis-Aligned Bounding Box) được dùng để xét va chạm hình chữ nhật. Điểm đặc biệt trong game là hộp va chạm của Khủng long (Hitbox) có thể **biến hình theo thời gian thực** dựa trên trạng thái `is_ducking` (cúi người).
+**RESET GAME / END:** Quá trình cài đặt lại khi thoát hoặc thua.
+- **STATE (GAME_OVER/WIN):** Cập nhật trạng thái `mp_state = MP_LOSE` hoặc `MP_WIN`.
+- **AC_DISPLAY_BUTTON_MODE_RELEASED:** Thoát khỏi trò chơi, chuyển về màn hình Menu.
+
+### 2.2 Chi tiết
+
+#### 2.2.1 Thuộc tính đối tượng
+**Trạng thái** của một đối tượng được biểu diễn bởi các **thuộc tính**.
 
 ```cpp
-int16_t dy = dino.y / 10;          // Tọa độ Y hiện tại
-int16_t dino_hit_y = dy;           // Y bắt đầu của Hitbox
-int16_t dino_hit_h = DINO_H;       // Chiều cao Hitbox (Mặc định 16px)
+typedef struct { 
+    int16_t y; 
+    int16_t v_y; 
+    bool is_jumping; 
+    bool is_ducking; 
+} dino_t;
 
-// Khi người chơi nhấn phím DOWN
-if (dino.is_ducking) {
-    dino_hit_y = dy + 6;           // Đẩy đỉnh đầu của Hitbox tụt xuống 6px
-    dino_hit_h = 10;               // Ép chiều cao Hitbox xuống còn 10px
-}
-
-// Tính toán giao cắt trục X và Y
-bool hit_x = (DINO_X + DINO_W - 4 > cx) && (DINO_X + 2 < cx + objects[i].w);
-bool hit_y = (dino_hit_y + dino_hit_h > objects[i].y + 2) && (dino_hit_y + 2 < objects[i].y + objects[i].h);
-
-if (hit_x && hit_y) {
-    // Kích hoạt Game Over hoặc Ăn điểm thưởng
-}
+typedef struct { 
+    int32_t x; 
+    int16_t y; 
+    uint8_t w; 
+    uint8_t h; 
+    uint8_t type; 
+    bool active; 
+} game_obj_t;
 ```
-*Nhờ cơ chế này, nửa thân trên của khung hình được xem như "vô hình", giúp Khủng long có thể luồn lách qua con Chim đang bay ở độ cao (Y = -20) một cách hoàn hảo mà chân vẫn chạm đất.*
 
-### 3.2 Hệ thống Quản lý Đối tượng (Object Pooling & Recycling)
-Khởi tạo động (`malloc/free`) trong RTOS cho game tốc độ cao sẽ gây phân mảnh và lag. Dự án giải quyết bằng **Hồ chứa đối tượng (Object Pool)** tĩnh:
+**Áp dụng struct cho các đối tượng:**
+|struct|Các biến|
+|------|--------|
+|dino_t|dino|
+|game_obj_t|objects[4]|
+|bg_obj_t|bgs[1]|
+
+#### 2.2.2 Task
+<p align="center"><img src="images/table_task.jpg" alt="dino tasks design" width="720"/></p>
+<p align="center"><strong><em>Hình 4:</em></strong> Bảng Task của hệ thống Dino Game</p>
+
+#### 2.2.3 Message & Signal
+|Task|Signal|Mô tả|
+|---|---|---|
+|AC_TASK_DISPLAY_ID|SCREEN_ENTRY|Khởi tạo game ban đầu|
+|AC_TASK_DISPLAY_ID|AR_GAME_TIME_TICK|Chu kỳ 10ms để tính toán và cập nhật Frame|
+|AC_TASK_DISPLAY_ID|AC_DISPLAY_BUTTON_DOWN_PRESSED|Sử dụng làm lệnh bắt đầu cho MASTER|
+|AC_TASK_DISPLAY_ID|AC_DISPLAY_BUTTON_MODE_RELEASED|Thoát game về màn hình chính|
+
+## III. Hướng dẫn chi tiết code trong đối tượng
+### 3.1 DINO UPDATE TỌA ĐỘ VÀ HITBOX
+
+**Tóm tắt nguyên lý:** Xử lý trọng lực khi nhảy, cập nhật trạng thái `is_ducking` từ phím bấm và thu hẹp Hitbox khi cúi người để né vật cản tầm cao.
+
 ```cpp
-static game_obj_t objects[4]; // 4 vật thể được dùng lại vĩnh viễn
+void dino_update() {
+    dino.is_ducking = (btn_down.state == BUTTON_SW_STATE_PRESSED); 
+
+    // Cập nhật vật lý nhảy
+    if (dino.is_jumping) {
+        dino.y += dino.v_y; 
+        dino.v_y += GRAVITY_SCALED;
+        if (dino.y >= (GROUND_Y_SCALED - (DINO_H * 10))) {
+            dino.y = GROUND_Y_SCALED - (DINO_H * 10);
+            dino.is_jumping = false; dino.v_y = 0;
+        }
+    }
+    
+    // Logic va chạm
+    int16_t dy = dino.y / 10;
+    int16_t dino_hit_y = dy;
+    int16_t dino_hit_h = DINO_H;
+    
+    if (dino.is_ducking) {
+        dino_hit_y = dy + 6; 
+        dino_hit_h = 10;
+    }
+    
+    bool hit_x = (DINO_X + DINO_W - 4 > cx) && (DINO_X + 2 < cx + objects[i].w);
+    bool hit_y = (dino_hit_y + dino_hit_h > objects[i].y + 2) && (dino_hit_y + 2 < objects[i].y + objects[i].h);
+    
+    if (hit_x && hit_y) {
+        if (objects[i].type == TYPE_CACTUS || objects[i].type == TYPE_BIRD) {
+            mp_state = MP_LOSE;
+            rf_send_cmd(CMD_I_DIED); 
+        }
+    }
+}
 ```
-Thuật toán cuốn chiếu (Recycling): Khi vật thể thứ `i` trượt ra khỏi mép trái màn hình (`cx < -objects[i].w`), hệ thống sẽ không xóa nó, mà "bốc" nó lên và thả vào tọa độ X xa nhất ở mép phải màn hình, đồng thời Random lại bản chất của nó (Tỷ lệ: 20% Quà, 25% Chim, 55% Xương rồng).
 
-### 3.3 Giao thức Đa người chơi qua nRF24L01+
-Sử dụng hàm API của hệ thống để truyền/nhận lệnh 1 byte (1Mbps, Channel 40).
-* `CMD_START (1)`: Bắt đầu game đồng bộ.
-* `CMD_I_DIED (2)`: Báo tử.
-* `CMD_ATTACK (3)`: Nhận lệnh tấn công. Biến `attack_timer` lập tức được bơm đầy 300 chu kỳ, kích hoạt còi hú và tăng đột biến biến `current_speed`.
+### 3.2 ĐỒNG BỘ NRF24L01+ MULTIPLAYER
 
-<hr>
+**Tóm tắt nguyên lý:** Cấu hình hệ thống ở kênh truyền thứ 40, tốc độ 1Mbps. Đọc data mỗi 10ms trong chu kỳ `AR_GAME_TIME_TICK` để đưa ra hành động tương ứng.
 
-## IV. Đồ họa và Âm thanh
-### 4.1 Đồ họa (Graphics & Bitmaps)
-Do tài nguyên RAM hạn chế, tất cả dữ liệu hình ảnh được lưu thẳng vào bộ nhớ ROM (Flash) dưới dạng mảng hằng số Hex `PROGMEM`.
+```cpp
+void rf_send_cmd(uint8_t cmd) {
+    uint8_t tx_buf[1] = {cmd};
+    nRF24_TXMode(5, 15, RF_CHANNEL, nRF24_DataRate_1Mbps, 
+                 nRF24_TXPower_0dBm, nRF24_CRC_2byte, nRF24_PWR_Up, 
+                 RF_ADDR, 5);
+    nRF24_TXPacket(tx_buf, 1);
+    rf_mode_rx();
+}
+```
+
+Kiểm tra lệnh nhận được:
+```cpp
+uint8_t rx_data;
+if (nRF24_RXPacket(&rx_data, 1) == nRF24_RX_PCKT_PIPE0) {
+    if (rx_data == CMD_START) {
+        dino_reset();
+        mp_state = MP_PLAYING;
+    }
+    if (rx_data == CMD_I_DIED) {
+        mp_state = MP_WIN;
+        BUZZER_PlayTones(tones_cc);
+    }
+    if (rx_data == CMD_ATTACK) {
+        attack_timer = 300; 
+        BUZZER_PlayTones(tones_startup); 
+    }
+}
+```
+
+## IV. Hiển thị và âm thanh trong trò chơi
+### 4.1 Đồ họa
+
+#### 4.1.1 Thiết kế đồ họa cho các đối tượng
+**Bitmap** được lưu trữ dưới dạng mảng hằng số Hex (`PROGMEM`).
 
 | Nguồn tĩnh (PROGMEM) | Kích thước | Chức năng trong game |
 | :--- | :--- | :--- |
-| `bitmap_dino` | 16x16 px | Khủng long tư thế chạy bình thường |
-| `bitmap_dino_duck` | 16x16 px | Khủng long tư thế nằm sấp (Đã tính toán bù Y) |
+| `bitmap_dino` | 16x16 px | Khủng long tư thế chạy/nhảy |
+| `bitmap_dino_duck` | 16x16 px | Khủng long tư thế nằm sấp |
 | `bitmap_cactus` | 8x16 px | Chướng ngại vật sát đất |
 | `bitmap_bird` | 16x8 px | Chướng ngại vật bay trên không |
-| `bitmap_gift` | 8x8 px | Vật phẩm Kỹ năng |
+| `bitmap_gift` | 8x8 px | Vật phẩm Kỹ năng (Tấn công) |
 | `bitmap_cloud` | 16x8 px | Nền đồ họa tạo chiều sâu |
 
-Hàm `view_render.drawBitmap()` được tối ưu để chỉ vẽ những vật thể có cờ `active = true` nằm trong mảng `objects[]`.
+#### 4.1.2 Code vẽ màn hình
+```cpp
+void view_scr_dino_game() {
+    view_render.clear();
+    
+    if (mp_state == MP_PLAYING) { 
+        view_render.drawFastHLine(0, GROUND_Y_REAL, 128, WHITE);
+        view_render.setCursor(90, 2); 
+        view_render.print(ar_game_score);
+        
+        view_render.drawBitmap(bgs[0].x / 10, bgs[0].y, bitmap_cloud, bgs[0].w, bgs[0].h, WHITE);
+        
+        for (int i = 0; i < 4; i++) {
+            if (objects[i].active) {
+                const unsigned char* fg_bmp;
+                if (objects[i].type == TYPE_CACTUS) fg_bmp = bitmap_cactus;
+                else if (objects[i].type == TYPE_BIRD) fg_bmp = bitmap_bird; 
+                else fg_bmp = bitmap_gift;
+                
+                view_render.drawBitmap(objects[i].x / 10, objects[i].y, fg_bmp, objects[i].w, objects[i].h, WHITE);
+            }
+        }
+        
+        if (dino.is_ducking) {
+            view_render.drawBitmap(DINO_X, dino.y / 10, bitmap_dino_duck, DINO_W, DINO_H, WHITE);
+        } else {
+            view_render.drawBitmap(DINO_X, dino.y / 10, bitmap_dino, DINO_W, DINO_H, WHITE);
+        }
+    }
+}
+```
 
-### 4.2 Âm thanh (Audio Feedback)
-Âm thanh được phát thông qua bộ còi Buzzer của phần cứng theo phương thức Non-blocking (Không chặn CPU) để không làm mất FPS của game.
-* **Còi ăn quà (`tones_cc`):** 1 tiếng bíp ngắn. Báo hiệu thành công nhặt được Hộp quà.
-* **Còi báo động (`tones_startup`):** Chuỗi âm thanh réo rắt liên tục. Phản hồi cho người chơi biết họ vừa bị đối thủ sử dụng kỹ năng Tăng tốc (Speed Up).
-* **Còi tử trận (`tones_3beep`):** 3 tiếng trầm ngắt quãng, báo hiệu Game Over do đụng vật cản.
+### 4.2 Âm thanh
+Sử dụng còi Buzzer theo phương thức Non-blocking để không làm mất FPS.
+- **tones_cc:** Bíp ngắn khi nhặt Gift.
+- **tones_startup:** Âm thanh kéo dài khi bị đối thủ tấn công (Speed Up).
+- **tones_3beep:** Báo hiệu Game Over.
 
 ---
+*******
