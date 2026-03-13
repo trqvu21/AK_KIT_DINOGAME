@@ -67,7 +67,7 @@ sequenceDiagram
     participant RF as NRF24L01+
     participant View as OLED_View
 
-    rect rgb(230, 240, 230)
+    rect rgba(0, 255, 100, 0.1)
     Note over Player, View: KHỞI TẠO GAME (SCREEN ENTRY)
     AK_OS->>Screen: SCREEN_ENTRY
     activate Screen
@@ -79,7 +79,7 @@ sequenceDiagram
     deactivate Screen
     end
 
-    rect rgb(240, 230, 240)
+    rect rgba(255, 200, 0, 0.1)
     Note over Player, View: BẮT ĐẦU ĐỒNG BỘ (START)
     Player->>Screen: Nhấn phím DOWN (AC_DISPLAY_BUTTON_DOWN_PRESSED)
     activate Screen
@@ -89,7 +89,7 @@ sequenceDiagram
     deactivate Screen
     end
 
-    rect rgb(230, 240, 255)
+    rect rgba(0, 150, 255, 0.1)
     Note over Player, View: VÒNG LẶP TRÒ CHƠI (GAME PLAY - NORMAL)
     AK_OS->>Screen: AR_GAME_TIME_TICK
     activate Screen
@@ -105,7 +105,7 @@ sequenceDiagram
     deactivate Screen
     end
 
-    rect rgb(255, 230, 230)
+    rect rgba(255, 50, 50, 0.1)
     Note over Player, View: TƯƠNG TÁC ĐA NGƯỜI CHƠI (MULTIPLAYER EVENT)
     opt Nhặt Vật Phẩm (Gift)
         Dino->>Screen: Hit_Gift == true
