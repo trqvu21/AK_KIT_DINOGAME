@@ -56,8 +56,68 @@ Phần mô tả sau đây về **“Multiplayer Dino game”** , giải thích c
 ### 2.1 Sơ đồ trình tự
 **Sơ đồ trình tự** được sử dụng để mô tả trình tự của các Message và luồng tương tác giữa các đối tượng.
 
-<p align="center"><img src="images/sequence_diagram.jpg" alt="dino game UML" width="720"/></p>
-<p align="center"><strong><em>Hình 3:</em></strong> The sequence diagram</p>
+sequenceDiagram
+    autonumber
+    participant Player
+    participant AK_OS as AK OS (System)
+    participant Screen as scr_archery_game
+    participant Dino as Dino Object
+    participant Objects as Game Objects
+    participant RF as NRF24L01+
+    participant View as OLED_View
+
+    rect rgb(230, 240, 230)
+    Note over Player, View: KHỞI TẠO GAME (SCREEN ENTRY)
+    AK_OS->>Screen: SCREEN_ENTRY
+    activate Screen
+    Screen->>Dino: dino_reset()
+    Screen->>Objects: Khởi tạo mảng (Cactus, Bird, Gift)
+    Screen->>RF: rf_init_hardware_kit() & rf_mode_rx()
+    Screen->>AK_OS: timer_set(TIMER_ONE_SHOT, 10ms)
+    Screen->>Screen: STATE = MP_WAITING
+    deactivate Screen
+    end
+
+    rect rgb(240, 230, 240)
+    Note over Player, View: BẮT ĐẦU ĐỒNG BỘ (START)
+    Player->>Screen: Nhấn phím DOWN (AC_DISPLAY_BUTTON_DOWN_PRESSED)
+    activate Screen
+    Screen->>RF: rf_send_cmd(CMD_START)
+    Screen->>Dino: dino_reset()
+    Screen->>Screen: STATE = MP_PLAYING
+    deactivate Screen
+    end
+
+    rect rgb(230, 240, 255)
+    Note over Player, View: VÒNG LẶP TRÒ CHƠI (GAME PLAY - NORMAL)
+    AK_OS->>Screen: AR_GAME_TIME_TICK
+    activate Screen
+    Screen->>Player: Đọc trạng thái nút bấm (Jump/Duck)
+    Screen->>RF: nRF24_RXPacket() (Nghe ngóng lệnh đối thủ)
+    Screen->>Dino: dino_update()
+    activate Dino
+    Dino->>Objects: Di chuyển vật thể (x -= current_speed)
+    Dino->>Objects: Xét va chạm (Hitbox Calculation)
+    deactivate Dino
+    Screen->>View: view_render.update() (Vẽ Frame mới)
+    Screen->>AK_OS: timer_set(TIMER_ONE_SHOT, 10ms)
+    deactivate Screen
+    end
+
+    rect rgb(255, 230, 230)
+    Note over Player, View: TƯƠNG TÁC ĐA NGƯỜI CHƠI (MULTIPLAYER EVENT)
+    opt Nhặt Vật Phẩm (Gift)
+        Dino->>Screen: Hit_Gift == true
+        Screen->>RF: rf_send_cmd(CMD_ATTACK) (Ném tạ đối thủ)
+        Screen->>AK_OS: BUZZER_PlayTones(tones_cc)
+    end
+    opt Va chạm (Game Over)
+        Dino->>Screen: Hit_Cactus / Hit_Bird == true
+        Screen->>RF: rf_send_cmd(CMD_I_DIED) (Báo tử)
+        Screen->>Screen: STATE = MP_LOSE
+        Screen->>AK_OS: BUZZER_PlayTones(tones_3beep)
+    end
+    end
 
 ### Ghi chú:
 **SCREEN_ENTRY:** Cài đặt các thiết lập ban đầu cho đối tượng trong game.
