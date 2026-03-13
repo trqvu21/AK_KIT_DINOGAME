@@ -172,9 +172,16 @@ typedef struct {
 |game_obj_t|objects[4]|
 |bg_obj_t|bgs[1]|
 
-#### 2.2.2 Task
-<p align="center"><img src="images/table_task.jpg" alt="dino tasks design" width="720"/></p>
-<p align="center"><strong><em>Hình 4:</em></strong> Bảng Task của hệ thống Dino Game</p>
+#### 2.2.2 Phân bổ Hàm xử lý (Task & Handlers)
+Để giải quyết triệt để lỗi tràn bộ nhớ (MF 31) do việc khởi tạo quá nhiều Task độc lập, hệ thống Dino Game đã được tối ưu hóa toàn bộ logic vào chung một Task duy nhất (`AC_TASK_DISPLAY_ID`) của RTOS. Các đối tượng được xử lý tuần tự qua các Function con trong mỗi chu kỳ Frame.
+
+| Đối tượng / Phân hệ | Hàm xử lý (Handler) | Mô tả chức năng |
+| :--- | :--- | :--- |
+| **System Task** | `scr_archery_game_handle` | Task gốc của RTOS. Lắng nghe tín hiệu Timer, phím bấm và ngắt vô tuyến (RF). Điều phối vòng lặp game. |
+| **Vật lý & Va chạm** | `dino_update()` | Tính toán trọng lực rơi của Khủng long, cập nhật tọa độ vật cản, và xét va chạm (Hitbox) theo thời gian thực. |
+| **Giao thức Mạng** | `rf_send_cmd()`, `rf_mode_rx()`| Đóng gói và phát sóng lệnh (Bắt đầu, Tấn công, Báo tử), đồng thời duy trì chế độ lắng nghe liên tục. |
+| **Đồ họa OLED** | `view_scr_dino_game()` | Quét mảng `objects[]` và render toàn bộ ảnh Bitmap (Cactus, Bird, Cloud...) ra màn hình. |
+| **Khởi tạo & Reset** | `dino_reset()` | Xóa dữ liệu bộ nhớ đệm, cấp phát lại tọa độ ngẫu nhiên ban đầu cho các vật phẩm và chướng ngại vật. |
 
 #### 2.2.3 Message & Signal
 |Task|Signal|Mô tả|
