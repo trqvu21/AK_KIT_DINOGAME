@@ -105,8 +105,8 @@ void dino_reset() {
     dino.is_jumping = false;
     dino.is_ducking = false;
     
-    objects[0] = { (128 + 10) * 10, GROUND_Y_REAL - 16, 8, 16, TYPE_CACTUS, true };
-    objects[1] = { objects[0].x + 1500, GROUND_Y_REAL - 16, 8, 16, TYPE_CACTUS, true };
+    objects[0] = { (128 + 10) * 10, GROUND_Y_REAL - 16, 16, 16, TYPE_CACTUS, true };
+    objects[1] = { objects[0].x + 1500, GROUND_Y_REAL - 16, 16, 16, TYPE_CACTUS, true };
     objects[2] = { objects[1].x + 1200, GROUND_Y_REAL - 28, 8, 8, TYPE_GIFT, true }; 
     objects[3] = { objects[2].x + 1000, GROUND_Y_REAL - 20, 16, 8, TYPE_BIRD, true }; 
     
@@ -192,7 +192,7 @@ void dino_update() {
                 } 
                 else { 
                     objects[i].type = TYPE_CACTUS;
-                    objects[i].w = 8; 
+                    objects[i].w = 16; 
                     objects[i].h = 16;
                     objects[i].y = GROUND_Y_REAL - 16; 
                 }
