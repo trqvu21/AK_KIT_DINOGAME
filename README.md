@@ -22,7 +22,7 @@ KIT cũng tích hợp **RS485**, **NRF24L01+**, và **Flash** lên đến 32MB, 
 ### 1.2 Mô tả trò chơi và đối tượng
 Phần mô tả sau đây về **“Multiplayer Dino game”** , giải thích cách chơi và cơ chế xử lý của trò chơi.
 
-<p align="center"><img src="images/game_play.jpg" alt="dino game play screen" width="600"/></p>
+<p align="center"><img src="resources/images/Dino.webp" alt="AK Embedded Base Kit - STM32L151" width="480"/></p>
 <p align="center"><strong><em>Hình 2:</em></strong> Màn hình game play và các đối tượng</p>
 
 #### 1.2.1 Các đối tượng (Object) trong game:
