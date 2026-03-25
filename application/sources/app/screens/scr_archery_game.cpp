@@ -139,9 +139,15 @@ void dino_update() {
     }
     
     // --- 3. Tính toán Tốc độ & Độ khó ---
-    int32_t base_speed = CACTUS_SPEED_SCALED + (ar_game_score / SCORE_STEP) * SPEED_STEP;
-    if (base_speed > MAX_BASE_SPEED) {
-        base_speed = MAX_BASE_SPEED; // Chốt chặn tối đa
+    // --- 3. Tính toán Tốc độ & Độ khó ---
+    // Mức Speed càng cao (1-5), cộng thêm càng nhiều tốc độ (mỗi mức +10)
+    int32_t start_speed_bonus = (settingsetup.num_arrow - 1) * 10; 
+    
+    int32_t base_speed = CACTUS_SPEED_SCALED + start_speed_bonus + (ar_game_score / SCORE_STEP) * SPEED_STEP;
+    
+    // Nâng mức chốt chặn tối đa lên để phù hợp với tốc độ mới
+    if (base_speed > MAX_BASE_SPEED + start_speed_bonus) {
+        base_speed = MAX_BASE_SPEED + start_speed_bonus; 
     }
     
     int32_t current_speed = base_speed;
@@ -170,9 +176,19 @@ void dino_update() {
                 }
                 
                 int other_x = max_x / 10;
-                int new_x = other_x + MIN_CACTUS_GAP + (rand() % (MAX_CACTUS_GAP - MIN_CACTUS_GAP));
+                
+                // Mức Difficulty càng cao (1-5), khoảng cách (Gap) càng bị thu hẹp lại
+                int gap_reduce = (settingsetup.meteoroid_speed - 1) * 15; 
+                int current_min_gap = MIN_CACTUS_GAP - gap_reduce;
+                int current_max_gap = MAX_CACTUS_GAP - (gap_reduce * 2);
+
+                // Chốt chặn an toàn để xương rồng không bị đè lên nhau
+                if (current_min_gap < 40) current_min_gap = 40; 
+                if (current_max_gap < current_min_gap + 20) current_max_gap = current_min_gap + 20;
+
+                int new_x = other_x + current_min_gap + (rand() % (current_max_gap - current_min_gap));
                 if (new_x < 128) {
-                    new_x = 128 + MIN_CACTUS_GAP + (rand() % 50);
+                    new_x = 128 + current_min_gap + (rand() % 50);
                 }
                 
                 objects[i].x = new_x * 10;
@@ -215,8 +231,12 @@ void dino_update() {
                 if (objects[i].type == TYPE_CACTUS || objects[i].type == TYPE_BIRD) {
                     mp_state = MP_LOSE;
                     rf_send_cmd(CMD_I_DIED); 
-                    BUZZER_PlayTones(tones_3beep);
+                    BUZZER_PlayTones(tones_3beep); // Chip sẽ dừng ở đây để kêu beep xong mới chạy tiếp
+
+                    // --- DÒNG LỆNH MỚI: CHUYỂN SANG MÀN HÌNH GAME OVER ĐẸP MẮT ---
+                    SCREEN_TRAN(scr_game_over_handle, &scr_game_over);
                 } 
+                // ...
                 else if (objects[i].type == TYPE_GIFT) {
                     objects[i].active = false; 
                     ar_game_score += 5;        
@@ -317,6 +337,7 @@ void scr_archery_game_handle(ak_msg_t* msg) {
     switch (msg->sig) {
         
         case SCREEN_ENTRY: {
+            eeprom_read(EEPROM_SETTING_START_ADDR, (uint8_t*)&settingsetup, sizeof(settingsetup));//moi
             dino_reset();
             mp_state = MP_WAITING;
             ar_game_state = 1; 

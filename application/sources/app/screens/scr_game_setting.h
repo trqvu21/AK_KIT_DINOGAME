@@ -34,10 +34,12 @@
 // Text and Number
 #define AR_GAME_SETTING_TEXT_AXIS_X 			(20)
 #define AR_GAME_SETTING_NUMBER_AXIS_X			(110)
-// Chosse icon	
-#define AR_GAME_SETTING_CHOSSE_ICON_AXIS_Y		(17)
-#define AR_GAME_SETTING_CHOSSE_ICON_SIZE_W		(20)
-#define AR_GAME_SETTING_CHOSSE_ICON_SIZE_H		(20)
+
+// Chosse icon (Đã được đổi thành Icon Dino 16x16)
+#define AR_GAME_SETTING_CHOSSE_ICON_AXIS_Y		(15) 
+#define AR_GAME_SETTING_CHOSSE_ICON_SIZE_W		(16)
+#define AR_GAME_SETTING_CHOSSE_ICON_SIZE_H		(16)
+
 // Frames	
 #define AR_GAME_SETTING_FRAMES_AXIS_X			(20)
 #define AR_GAME_SETTING_FRAMES_AXIS_Y_1			(2)

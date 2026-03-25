@@ -27,25 +27,44 @@ view_screen_t scr_charts_game = {
 
 void view_scr_charts_game() {
 	view_render.clear();
-	view_render.fillScreen(WHITE);
-	view_render.drawBitmap(35, 5, bitmap_icon_charts, 60, 20, 0);
-	view_render.fillRoundRect(1, 28, 126, 12, 5, 0);
-	view_render.fillRoundRect(1, 51, 126, 12, 5, 0);
-	view_render.setTextSize(1);
-	view_render.setTextColor(WHITE);
-	view_render.setCursor(16, 30);
-	view_render.print(gamescore_charts.score_1st);
-	view_render.setCursor(86, 30);
-	view_render.print(": 1st");
-	view_render.setCursor(16, 54);
-	view_render.print(gamescore_charts.score_3rd);
-	view_render.setCursor(86, 54);
-	view_render.print(": 3rd");
+	
+	// Tiêu đề (Dùng lại bitmap HIGH SCORE cũ)
+	view_render.drawBitmap(34, 2, bitmap_icon_charts, 60, 20, WHITE);
+
+	// Khung viền tổng thể cho bảng xếp hạng
+	view_render.drawRoundRect(8, 24, 112, 38, 3, WHITE);
+
+	// ==========================================
+	// TOP 1: Nổi bật nhất (Nền trắng, chữ đen)
+	// ==========================================
+	view_render.fillRoundRect(8, 24, 112, 14, 3, WHITE);
 	view_render.setTextColor(BLACK);
-	view_render.setCursor(16, 42);
+	view_render.setCursor(16, 27);
+	view_render.print("1ST :");
+	view_render.setCursor(55, 27);
+	view_render.print(gamescore_charts.score_1st);
+	
+	// Thêm icon Khủng long đứng cạnh kỷ lục Top 1 (Vẽ bằng màu ĐEN để đục lỗ nền trắng)
+	view_render.drawBitmap(95, 23, bitmap_dino, 16, 16, BLACK);
+
+	// ==========================================
+	// TOP 2: Nền đen, chữ trắng
+	// ==========================================
+	view_render.setTextColor(WHITE);
+	view_render.setCursor(16, 40);
+	view_render.print("2ND :");
+	view_render.setCursor(55, 40);
 	view_render.print(gamescore_charts.score_2nd);
-	view_render.setCursor(86, 42);
-	view_render.print(": 2nd");
+
+	// ==========================================
+	// TOP 3: Nền đen, chữ trắng
+	// ==========================================
+	view_render.setCursor(16, 52);
+	view_render.print("3RD :");
+	view_render.setCursor(55, 52);
+	view_render.print(gamescore_charts.score_3rd);
+
+	view_render.update();
 }
 
 /*****************************************************************************/
@@ -55,40 +74,32 @@ void scr_charts_game_handle(ak_msg_t* msg) {
 	switch (msg->sig) {
 	case SCREEN_ENTRY: {
 		APP_DBG_SIG("SCREEN_ENTRY\n");
-		view_render.initialize();
-		view_render_display_on();
-		// Read score 
-		eeprom_read(	EEPROM_SCORE_START_ADDR, \
-						(uint8_t*)&gamescore_charts, \
-						sizeof(gamescore_charts));
+		// Đọc điểm từ bộ nhớ EEPROM khi vừa vào màn hình
+		eeprom_read(EEPROM_SCORE_START_ADDR, (uint8_t*)&gamescore_charts, sizeof(gamescore_charts));
 	}
 		break;
 
-	case AC_DISPLAY_BUTTON_MODE_RELEASED: {
-		APP_DBG_SIG("AC_DISPLAY_BUTTON_MODE_RELEASED\n");
+	case AC_DISPLAY_BUTTON_MODE_RELEASED: 
+	case AC_DISPLAY_BUTTON_DOWN_RELEASED: {
+		// Bấm MODE hoặc DOWN để thoát về Menu
+		APP_DBG_SIG("EXIT_CHARTS\n");
 		SCREEN_TRAN(scr_menu_game_handle, &scr_menu_game);	
-	}
 		BUZZER_PlayTones(tones_cc);
+	}
 		break;
 
-	case AC_DISPLAY_BUTTON_UP_LONG_PRESSED: {
-		APP_DBG_SIG("AC_DISPLAY_BUTTON_UP_LONG_PRESSED\n");
-		// Reset score charts
+	case AC_DISPLAY_BUTTON_UP_PRESSED: {
+		// Nhấn giữ nút UP để Reset toàn bộ điểm (Xóa bảng vàng)
+		APP_DBG_SIG("RESET_SCORE\n");
 		gamescore_charts.score_1st = 0;
 		gamescore_charts.score_2nd = 0;
 		gamescore_charts.score_3rd = 0;
-		eeprom_write(	EEPROM_SCORE_START_ADDR, \
-						(uint8_t*)&gamescore_charts, \
-						sizeof(gamescore_charts));
+		
+		// Lưu lại vào EEPROM
+		eeprom_write(EEPROM_SCORE_START_ADDR, (uint8_t*)&gamescore_charts, sizeof(gamescore_charts));
+		view_scr_charts_game();
+		BUZZER_PlayTones(tones_cc);
 	}
-		BUZZER_PlayTones(tones_cc);
-		break;
-
-	case AC_DISPLAY_BUTTON_DOWN_RELEASED: {
-		APP_DBG_SIG("AC_DISPLAY_BUTTON_DOWN_RELEASED\n");
-		SCREEN_TRAN(scr_menu_game_handle, &scr_menu_game);
-	}	
-		BUZZER_PlayTones(tones_cc);
 		break;
 
 	default:
