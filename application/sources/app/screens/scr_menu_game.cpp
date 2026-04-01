@@ -204,7 +204,7 @@ void update_menu_screen_chosse() {
 void screen_tran_menu() {
 	switch (screen_menu.location) {
 	case 0:	// item 1
-			SCREEN_TRAN(scr_archery_game_handle,	&scr_archery_game	);
+			SCREEN_TRAN(scr_multi_lobby_handle, &scr_multi_lobby);	
 		break;
 	case 1:	// item 2
 			SCREEN_TRAN(scr_game_setting_handle,	&scr_game_setting	);

@@ -8,7 +8,7 @@
 #include "scr_idle.h"
 #include "scr_menu_game.h"
 #include "scr_startup.h"
-
+#include "scr_multi_lobby.h"
 // scr_archery_game
 extern view_dynamic_t dyn_view_item_archery_game;
 extern view_screen_t scr_archery_game;

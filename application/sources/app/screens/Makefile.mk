@@ -13,6 +13,7 @@ SOURCES_CPP += sources/app/screens/scr_archery_game.cpp
 SOURCES_CPP += sources/app/screens/scr_game_over.cpp
 SOURCES_CPP += sources/app/screens/scr_charts_game.cpp
 SOURCES_CPP += sources/app/screens/screens_bitmap.cpp
+SOURCES_CPP += sources/app/screens/scr_multi_lobby.cpp  # <-- THÊM ĐÚNG DÒNG NÀY VÀO ĐÂY
 
 # Archery game 
 # SOURCES_CPP += sources/app/screens/ar_game_archery.cpp
