@@ -1,6 +1,7 @@
+Để khắc phục vấn đề này (chứa code block bên trong code block), tôi sẽ dùng 4 dấu backtick (` ```` `) để bọc toàn bộ nội dung lại. Bạn chỉ cần nhấn nút **Copy** ở góc phải khung dưới đây là sẽ lấy được trọn vẹn 100% nội dung nhé:
+
+````markdown
 # Multiplayer Dino Game - Build on AK Embedded Base Kit
-
-
 
 <hr>
 
@@ -22,7 +23,7 @@ KIT cũng tích hợp **RS485**, **NRF24L01+**, và **Flash** lên đến 32MB, 
 ### 1.2 Mô tả trò chơi và đối tượng
 Phần mô tả sau đây về **“Multiplayer Dino game”** , giải thích cách chơi và cơ chế xử lý của trò chơi.
 
-<p align="center"><img src="resources/images/menu.webp" alt="AK Embedded Base Kit - STM32L151" width="480"/></p>
+<p align="center"><img src="resources/images/menu.webp" alt="Màn hình game play và các đối tượng" width="480"/></p>
 <p align="center"><strong><em>Hình 2:</em></strong> Màn hình game play và các đối tượng</p>
 
 #### 1.2.1 Các đối tượng (Object) trong game:
@@ -35,7 +36,7 @@ Phần mô tả sau đây về **“Multiplayer Dino game”** , giải thích c
 |**Đám mây**|Cloud|Cảnh nền lơ lửng, trôi chậm hơn tiền cảnh để tạo hiệu ứng 3D (Parallax).|
 
 #### 1.2.2 Cách chơi game:
-- Trò chơi sử dụng 2 thiết bị kết nối với nhau. Một thiết bị được phân quyền làm `MASTER`. Nhấn nút **[Down]** trên máy Master để bắt đầu đồng bộ ván chơi cho cả 2 thiết bị.
+- Trò chơi sử dụng 2 thiết bị kết nối với nhau. Một thiết bị được phân quyền làm `MASTER`. Nhấn nút **[Down]** trên máy Master để bắt đầu đồng bộ ván chơi cho cả 2 thiết bị. *(Lưu ý: Cơ chế này đã được nâng cấp thành Sảnh chờ Peer-to-Peer ở Version 2.0)*.
 - Trong trò chơi này bạn sẽ điều khiển Dino, nhấn nút **[Up]** để bật nhảy, và nhấn giữ nút **[Down]** để gập người cúi xuống.
 - Mục tiêu trò chơi là kiếm được càng nhiều điểm càng tốt, sống sót lâu nhất có thể và ăn Hộp quà để gây khó dễ cho máy đối thủ. Trò chơi kết thúc khi Dino chạm vào Cactus hoặc Bird.
 
@@ -319,5 +320,29 @@ Sử dụng còi Buzzer theo phương thức Non-blocking để không làm mấ
 - **tones_startup:** Âm thanh kéo dài khi bị đối thủ tấn công (Speed Up).
 - **tones_3beep:** Báo hiệu Game Over.
 
----
-*******
+<hr>
+
+## V. CÁC CẬP NHẬT KIẾN TRÚC & TÍNH NĂNG MỚI (VERSION 2.0)
+Nhằm mang lại trải nghiệm chuyên nghiệp và ổn định hơn, mã nguồn đã được tái cấu trúc (Refactoring) theo chuẩn Kỹ thuật Phần mềm và bổ sung các tính năng nâng cao.
+
+### 5.1 Kiến trúc Sảnh chờ (Lobby) & Matchmaking
+Loại bỏ hoàn toàn cơ chế Master/Slave cũ, hệ thống được nâng cấp lên mô hình **Ngang hàng (Peer-to-Peer)** với UI Sảnh chờ chuyên nghiệp:
+- **Định danh người chơi:** Mạch tự động hiển thị tên ngẫu nhiên trên màn hình OLED (Ví dụ: `MY NAME: [P73]`).
+- **Gửi lời mời:** Nhấn nút `DOWN` để báo danh Ready (`WAITING REPLY...`).
+- **Phản hồi:** Thiết bị nhận lời mời sẽ hiển thị cảnh báo `[P73] INVITES!`, cho phép người chơi ấn `UP` để Chấp nhận (ACCEPT) hoặc ấn `DOWN` để Từ chối (REJECT).
+- **Chơi Solo:** Hỗ trợ nhấp đúp (Double Tap) phím `DOWN` trong lúc tìm trận để bỏ qua mạng và chơi một mình.
+
+### 5.2 Mở rộng Payload RF & Cách ly phiên chơi (Session Isolation)
+Giải quyết triệt để vấn đề nhiễu sóng khi có Board mạch thứ 3 xen vào kênh truyền (Channel Hopping) của 2 thiết bị đang thi đấu:
+- **Payload 5-Bytes:** Gói tin RF gửi đi được mở rộng từ 1 Byte thành 5 Bytes (bao gồm `[Lệnh CMD]` + `[Ký tự 1]` + `[Ký tự 2]` + `[Ký tự 3]` + `[\0]`). 
+- **Target Locking:** Sau khi ghép cặp thành công, vi điều khiển sẽ lưu trữ Tên của đối phương vào bộ nhớ RAM. Mọi lệnh mạng (`CMD_I_DIED`, `CMD_ATTACK`) đến từ các Board không khớp thẻ tên sẽ bị loại bỏ lập tức (Drop Packet), đảm bảo ván game không bị phá hoại.
+- Khắc phục lỗi `Hard Fault` trên thanh ghi SPI bằng cách sử dụng từ khóa `static` cho mảng `tx_buf`, đảm bảo bộ đệm DMA đọc dữ liệu an toàn.
+
+### 5.3 Thuật toán Sinh hạt giống qua Hardware UID
+Việc nạp chung 1 file code `.bin` trên nhiều mạch gây ra lỗi trùng lặp chuỗi ngẫu nhiên `rand()`, khiến mọi board đều có tên giống hệt nhau (Ví dụ: `P08`) và sinh chướng ngại vật y hệt nhau ở mỗi ván.
+- **Giải pháp:** Sử dụng bộ đếm thời gian thực **SysTick** của lõi ARM Cortex-M (`0xE000E018`) để làm Hạt giống (Seed) cho hàm `srand()`. Đảm bảo tính Độc bản hoàn toàn dựa trên sai số thạch anh phần cứng mà không phụ thuộc vào code.
+
+### 5.4 Giao diện Dark Mode & Clean Code
+- **Cấu trúc Single Responsibility:** Toàn bộ file `scr_archery_game.cpp` được phẫu thuật thành 8 phân khu Logic rõ ràng, tách bạch giữa Network Layer, Physics Engine và View Renderer. Sử dụng `Forward Declarations` để xử lý vòng lặp gọi hàm.
+- **Dark Mode Game Over:** Thiết kế lại màn hình Game Over theo phong cách tối giản, nền đen chữ trắng, loại bỏ các chi tiết thừa để tập trung hiển thị Kỷ lục (BEST SCORE).
+- **Graphic Assets:** Đồ họa đám mây được thay thế sang chuẩn kích thước `32x16 pixel`, thiết kế lấy cảm hứng từ Google Dinosaur nguyên bản.
