@@ -1,7 +1,6 @@
-Để khắc phục vấn đề này (chứa code block bên trong code block), tôi sẽ dùng 4 dấu backtick (` ```` `) để bọc toàn bộ nội dung lại. Bạn chỉ cần nhấn nút **Copy** ở góc phải khung dưới đây là sẽ lấy được trọn vẹn 100% nội dung nhé:
-
-````markdown
 # Multiplayer Dino Game - Build on AK Embedded Base Kit
+
+
 
 <hr>
 
@@ -23,7 +22,7 @@ KIT cũng tích hợp **RS485**, **NRF24L01+**, và **Flash** lên đến 32MB, 
 ### 1.2 Mô tả trò chơi và đối tượng
 Phần mô tả sau đây về **“Multiplayer Dino game”** , giải thích cách chơi và cơ chế xử lý của trò chơi.
 
-<p align="center"><img src="resources/images/menu.webp" alt="Màn hình game play và các đối tượng" width="480"/></p>
+<p align="center"><img src="resources/images/menu.webp" alt="AK Embedded Base Kit - STM32L151" width="480"/></p>
 <p align="center"><strong><em>Hình 2:</em></strong> Màn hình game play và các đối tượng</p>
 
 #### 1.2.1 Các đối tượng (Object) trong game:
@@ -36,7 +35,7 @@ Phần mô tả sau đây về **“Multiplayer Dino game”** , giải thích c
 |**Đám mây**|Cloud|Cảnh nền lơ lửng, trôi chậm hơn tiền cảnh để tạo hiệu ứng 3D (Parallax).|
 
 #### 1.2.2 Cách chơi game:
-- Trò chơi sử dụng 2 thiết bị kết nối với nhau. Một thiết bị được phân quyền làm `MASTER`. Nhấn nút **[Down]** trên máy Master để bắt đầu đồng bộ ván chơi cho cả 2 thiết bị. *(Lưu ý: Cơ chế này đã được nâng cấp thành Sảnh chờ Peer-to-Peer ở Version 2.0)*.
+- Trò chơi sử dụng 2 thiết bị kết nối với nhau. Một thiết bị được phân quyền làm `MASTER`. Nhấn nút **[Down]** trên máy Master để bắt đầu đồng bộ ván chơi cho cả 2 thiết bị.
 - Trong trò chơi này bạn sẽ điều khiển Dino, nhấn nút **[Up]** để bật nhảy, và nhấn giữ nút **[Down]** để gập người cúi xuống.
 - Mục tiêu trò chơi là kiếm được càng nhiều điểm càng tốt, sống sót lâu nhất có thể và ăn Hộp quà để gây khó dễ cho máy đối thủ. Trò chơi kết thúc khi Dino chạm vào Cactus hoặc Bird.
 
@@ -320,8 +319,6 @@ Sử dụng còi Buzzer theo phương thức Non-blocking để không làm mấ
 - **tones_startup:** Âm thanh kéo dài khi bị đối thủ tấn công (Speed Up).
 - **tones_3beep:** Báo hiệu Game Over.
 
-<hr>
-
 ## V. CÁC CẬP NHẬT KIẾN TRÚC & TÍNH NĂNG MỚI (VERSION 2.0)
 Nhằm mang lại trải nghiệm chuyên nghiệp và ổn định hơn, mã nguồn đã được tái cấu trúc (Refactoring) theo chuẩn Kỹ thuật Phần mềm và bổ sung các tính năng nâng cao.
 
@@ -346,3 +343,5 @@ Việc nạp chung 1 file code `.bin` trên nhiều mạch gây ra lỗi trùng 
 - **Cấu trúc Single Responsibility:** Toàn bộ file `scr_archery_game.cpp` được phẫu thuật thành 8 phân khu Logic rõ ràng, tách bạch giữa Network Layer, Physics Engine và View Renderer. Sử dụng `Forward Declarations` để xử lý vòng lặp gọi hàm.
 - **Dark Mode Game Over:** Thiết kế lại màn hình Game Over theo phong cách tối giản, nền đen chữ trắng, loại bỏ các chi tiết thừa để tập trung hiển thị Kỷ lục (BEST SCORE).
 - **Graphic Assets:** Đồ họa đám mây được thay thế sang chuẩn kích thước `32x16 pixel`, thiết kế lấy cảm hứng từ Google Dinosaur nguyên bản.
+---
+*******
